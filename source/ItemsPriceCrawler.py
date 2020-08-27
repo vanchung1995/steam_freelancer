@@ -36,7 +36,7 @@ def print_all_items(items = items):
         stp = item['timestamp']
         vp_price = item['vp_price']
         csgo_price = item['csgo_price']
-        print('Time: {:.20}, Name: {:.20}, csgo price: {:.10}, vp price: {:10}'.format(str(datetime.fromtimestamp(stp)),name,csgo_price, vp_price))
+        print('Time: {:.20}, Name: {:.40}, csgo price: {:.10}, vp price: {:10}'.format(str(datetime.fromtimestamp(stp)),name,csgo_price, vp_price))
     print('--------------------')
 
 class CSGoEmpire:
@@ -75,15 +75,16 @@ class CSGoEmpire:
         self.browser.maximize_window()
 
         self.signin()
-        sleep(10)
 
         # show_custom_priced_btn = self.browser.find_element_by_xpath(show_custom_priced_btn_xpath)
         # show_custom_priced_btn.click()
-        try:
-            toggle_div = self.browser.find_elements_by_class_name('toggle')
-            toggle_div[0].click()
-        except Exception as e:
-            print(e)
+        while True:
+            try:
+                toggle_div = self.browser.find_elements_by_class_name('toggle')
+                toggle_div[0].click()
+                break
+            except Exception as e:
+                print(e)
         sleep(10)
 
         while True:
@@ -143,16 +144,16 @@ class VPGamePrice:
                 items.append(item['price'])
         return items
 
-parser = argparse.ArgumentParser(description='Enter username and password')
-parser.add_argument('--username', type=str, required=True, help='username CSGoEmpire')
-parser.add_argument('--password', required=True, help='password CSGoEmpire')
-args = parser.parse_args()
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Enter username and password')
+    parser.add_argument('--username', type=str, required=True, help='username CSGoEmpire')
+    parser.add_argument('--password', required=True, help='password CSGoEmpire')
+    args = parser.parse_args()
+    username = args.username
+    password = args.password
+
     vp = VPGamePrice()
     # print(VPGamePrice().search('M4A4 | Hellfire (Field-Tested)'))
     # print(VPGamePrice().search('StatTrak™ AK-47 | Asiimov (BATTLE-SCARRED)'))
     # print(vp.search('AWP | Dragon Lore (FACTORY NEW)'))
-    username = args.username
-    password = args.password
     CSGoEmpire(username, password).get_all_data()

@@ -151,15 +151,13 @@ class CSGoEmpire:
 
         self.browser.close()
 
-parser = argparse.ArgumentParser(description='Enter username and password for trade account')
-parser.add_argument('--username', type=str, required=True, help='username CSGoEmpire') #navi_tm
-parser.add_argument('--password', type=str,required=True, help='password CSGoEmpire') #super_I250
-parser.add_argument('--famcode', required=True, help='family code CSGoEmpire') # 7485
-parser.add_argument('--authcode', type=str,action='store', required=True, help='authencode CSGoEmpire')
-args = parser.parse_args()
-
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Enter username and password for trade account')
+    parser.add_argument('--username', type=str, required=True, help='username CSGoEmpire') #navi_tm
+    parser.add_argument('--password', type=str,required=True, help='password CSGoEmpire') #super_I250
+    parser.add_argument('--famcode', required=True, help='family code CSGoEmpire') # 7485
+    parser.add_argument('--authcode', type=str,action='store', required=True, help='authencode CSGoEmpire')
+    args = parser.parse_args()
     username = args.username
     password = args.password
     authcode = args.authcode
