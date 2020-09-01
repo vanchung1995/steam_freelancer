@@ -120,30 +120,31 @@ class CSGoEmpire:
                     sell_price = float(vp_prices[0].strip().replace(',',''))
                     should_buy = canby(buy_price, sell_price)
                     print("Name: {},\t vpprice: {},\t csgo price: {},\t should buy: {} ".format(name, sell_price, buy_price, should_buy))
-                    if should_buy or buy_price < 5:
-                        withdraw_item.click()
-                        btns = self.browser.find_elements_by_tag_name('button')
-                        for btn in btns:
-                            if btn.text.lower().strip() == withdraw_button_text.lower().strip():
-                                btn.click()
-                                break
-                        model_btns = self.browser.find_elements_by_class_name(confirm_model_class)[0].find_elements_by_tag_name('button')
-                        for btn in model_btns:
-                            if btn.text.lower().strip() == confirm_model_btn_text.lower().strip():
-                                btn.click()
-                                break
-                        while True:
-                            try:
-                                model_btns = self.browser.find_elements_by_class_name(confirm_model_class)[0].find_elements_by_tag_name('button')
-                                for btn in model_btns:
-                                    if btn.text.lower().strip() == view_trade_offers_text.lower().strip():
-                                        btn.click()
-                                        exit(0)
-                                        # break
-                                break
-                            except:
-                                pass
-                        break
+                    if should_buy:
+                        print()
+                        # withdraw_item.click()
+                        # btns = self.browser.find_elements_by_tag_name('button')
+                        # for btn in btns:
+                        #     if btn.text.lower().strip() == withdraw_button_text.lower().strip():
+                        #         btn.click()
+                        #         break
+                        # model_btns = self.browser.find_elements_by_class_name(confirm_model_class)[0].find_elements_by_tag_name('button')
+                        # for btn in model_btns:
+                        #     if btn.text.lower().strip() == confirm_model_btn_text.lower().strip():
+                        #         btn.click()
+                        #         break
+                        # while True:
+                        #     try:
+                        #         model_btns = self.browser.find_elements_by_class_name(confirm_model_class)[0].find_elements_by_tag_name('button')
+                        #         for btn in model_btns:
+                        #             if btn.text.lower().strip() == view_trade_offers_text.lower().strip():
+                        #                 btn.click()
+                        #                 exit(0)
+                        #                 # break
+                        #         break
+                        #     except:
+                        #         pass
+                        # break
                 print('-----------------')
             except Exception as e:
                 print('Error: ', e)
