@@ -257,16 +257,16 @@ class Tradeitgg:
             try:
                 starttime = time.time()
                 self.vpgamedata_dict = self.vpgamecrawler.get_all_data()
-                # csgo_raw_data = rq.get(self.url_csgo_data)
-                dota2_raw_data = rq.get(self.url_dota2_data)
-                csgo_raw_data = dota2_raw_data
+                csgo_raw_data = rq.get(self.url_csgo_data)
+                # dota2_raw_data = rq.get(self.url_dota2_data)
+                # csgo_raw_data = dota2_raw_data
                 if csgo_raw_data.status_code != 200:
                     print('Error: status code = {} get data from {}'.format(rq.status_codes, self.url_csgo_data))
                     break
                 csgo_raw_data = csgo_raw_data.json()
                 for item in csgo_raw_data:
-                    # user_data = item[self.csgo_code]['items']
-                    user_data = item[self.dota2_code]['items']
+                    user_data = item[self.csgo_code]['items']
+                    # user_data = item[self.dota2_code]['items']
                     for fullname in user_data:
                         item_name = fullname.split('_')[1].strip()
                         if 'e' in user_data[fullname]:
