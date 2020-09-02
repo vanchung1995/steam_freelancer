@@ -123,11 +123,16 @@ class CSGoEmpire:
 
 
 class VPGamePrice:
-    def __init__(self):
+    def __init__(self, chanel):
         self.base_url = 'https://www.vpgame.com/market/gift/api/mall/diamond/item'
         self.limit = '100'
         self.offset = '0'
-        self.appid = '730'
+        if chanel == 'csgo':
+            self.appid = '730'
+        elif chanel == 'dota2':
+            self.appid = '570'
+        else:
+            raise Exception('Chanel must be csgo or dota2')
         self.sortby = 'price'
         self.order = 'asc'
 
@@ -139,8 +144,8 @@ class VPGamePrice:
                 'limit': self.limit,
                 'offset': offset,
                 'appid': self.appid,
-                'sortby': self.sortby,
-                'order': self.order,
+                # 'sortby': self.sortby,
+                # 'order': self.order,
             }
             response = rq.get(self.base_url, params=params)
             if response.status_code != 200:
@@ -184,9 +189,9 @@ class VPGamePrice:
 class ItemCompare:
     def __init__(self, item_name, name1, price1, name2, price2):
         self.item_name = item_name
-        self.tradeit_csgo_name = name1
+        self.tradeit_name = name1
         self.vpgame_name = name2
-        self.tradeit_csgo_price = price1
+        self.tradeit_price = price1
         self.vpgame_price = price2
 
     def calculateRatio(self, price1, price2):
@@ -197,14 +202,14 @@ class ItemCompare:
 
     def printInfo(self):
         print('{:.90}, {:.10} price: {:.10}, {:.10} price: {}, ratio {}/{}: {}'.format(self.item_name,
-                                                                                       self.tradeit_csgo_name,
-                                                                                       self.tradeit_csgo_price,
+                                                                                       self.tradeit_name,
+                                                                                       self.tradeit_price,
                                                                                        self.vpgame_name,
                                                                                        self.vpgame_price,
-                                                                                       self.tradeit_csgo_name,
+                                                                                       self.tradeit_name,
                                                                                        self.vpgame_name,
                                                                                        self.calculateRatio(
-                                                                                           self.tradeit_csgo_price,
+                                                                                           self.tradeit_price,
                                                                                            self.vpgame_price)))
 
 
@@ -216,33 +221,40 @@ def write_data_2_csv(data_dict, mode='w+', file_path='./tradeit_csgo_vpgame', ex
     if ext is None:
         ext = str(datetime.fromtimestamp(time.time())).replace(' ', '_')[:19]
     with open('{}_{}.csv'.format(file_path, ext), mode) as file:
-        header = 'Name\ttradeitcsgo_price\tvpgame_price\ttradeit/vpgame\tvpgame/tradeit\texist_vpgame_price\n'
+        # header = 'Name\ttradeit_csgo_price\tvpgame_price\ttradeit/vpgame\tvpgame/tradeit\texist_vpgame_price\n'
+        header = 'Name\ttradeit_price\tvpgame_price\ttradeit/vpgame\tvpgame/tradeit\texist_vpgame_price\n'
         file.write(header)
         for item_name in data_dict:
             itemcompare_obj = data_dict[item_name]
             exist_vpgame = (itemcompare_obj.vpgame_price is not None)
-            file.write('{}\t{}\t{}\t{}\t{}\t{}'.format(itemcompare_obj.item_name.replace('\t', ' '),
-                                                       itemcompare_obj.tradeit_csgo_price,
-                                                       itemcompare_obj.vpgame_price,
+            file.write('{}{}{}{}{}{}{}{}{}{}{}'.format(itemcompare_obj.item_name.replace(sep, ' '), sep,
+                                                       itemcompare_obj.tradeit_price, sep,
+                                                       itemcompare_obj.vpgame_price, sep,
                                                        itemcompare_obj.calculateRatio(
-                                                           itemcompare_obj.tradeit_csgo_price,
-                                                           itemcompare_obj.vpgame_price),
+                                                           itemcompare_obj.tradeit_price,
+                                                           itemcompare_obj.vpgame_price), sep,
                                                        itemcompare_obj.calculateRatio(itemcompare_obj.vpgame_price,
-                                                                                      itemcompare_obj.tradeit_csgo_price),
+                                                                                      itemcompare_obj.tradeit_price),
+                                                       sep,
                                                        exist_vpgame))
             file.write('\n')
 
 
 class Tradeitgg:
-    def __init__(self):
-        self.url_csgo_data = 'https://inventory.tradeit.gg/sinv/730'
-        self.url_dota2_data = 'https://inventory.tradeit.gg/sinv/570'
-        self.csgo_code = '730'
-        self.dota2_code = '570'
-        self.csgo_data_dict = {}
-        self.vpgamecrawler = VPGamePrice()
+    def __init__(self, chanel):
+        self.chanel = chanel
+        if chanel == 'csgo':
+            self.appid = '730'
+            self.url = 'https://inventory.tradeit.gg/sinv/730'
+        elif chanel == 'dota2':
+            self.appid = '570'
+            self.url = 'https://inventory.tradeit.gg/sinv/570'
+        else:
+            raise Exception('chanel must be csgo or dota2')
+        self.tradeit_data_dict = {}
+        self.vpgamecrawler = VPGamePrice(chanel)
         self.vpgamedata_dict = {}
-        self.csgo_without_vpgame_dict = {}
+        self.tradeit_without_vpgame_dict = {}
 
     def run(self):
         scriptlang = {
@@ -257,47 +269,46 @@ class Tradeitgg:
             try:
                 starttime = time.time()
                 self.vpgamedata_dict = self.vpgamecrawler.get_all_data()
-                csgo_raw_data = rq.get(self.url_csgo_data)
-                # dota2_raw_data = rq.get(self.url_dota2_data)
-                # csgo_raw_data = dota2_raw_data
-                if csgo_raw_data.status_code != 200:
+
+                tradeit_raw_data = rq.get(self.url)
+                if tradeit_raw_data.status_code != 200:
                     print('Error: status code = {} get data from {}'.format(rq.status_codes, self.url_csgo_data))
                     break
-                csgo_raw_data = csgo_raw_data.json()
-                for item in csgo_raw_data:
-                    user_data = item[self.csgo_code]['items']
-                    # user_data = item[self.dota2_code]['items']
+                tradeit_raw_data = tradeit_raw_data.json()
+                for item in tradeit_raw_data:
+                    user_data = item[self.appid]['items']
                     for fullname in user_data:
                         item_name = fullname.split('_')[1].strip()
                         if 'e' in user_data[fullname]:
                             e = user_data[fullname]['e'].strip()
                             item_name += ' (' + scriptlang[e] + ')'
-                        if item_name in self.csgo_data_dict:
+                        if item_name in self.tradeit_data_dict:
                             continue
                         price = float(user_data[fullname]['p']) / 100
                         vpgameprices = self.vpgamecrawler.search(item_name, self.vpgamedata_dict)
                         if len(vpgameprices) > 0:
                             vpprice = float(vpgameprices[0].strip().replace(',', ''))
-                            self.csgo_data_dict[item_name] = ItemCompare(item_name, 'csgo', price, 'vpgame', vpprice)
+                            self.tradeit_data_dict[item_name] = ItemCompare(item_name, 'tradeit', price, 'vpgame', vpprice)
                         else:
-                            self.csgo_without_vpgame_dict[item_name] = ItemCompare(item_name, 'csgo', price, 'vpgame',
-                                                                                   None)
-                write_data_2_csv(data_dict=self.csgo_data_dict)
-                write_data_2_csv(data_dict=self.csgo_without_vpgame_dict, mode='a+')
+                            self.tradeit_without_vpgame_dict[item_name] = ItemCompare(item_name, 'tradeit', price, 'vpgame',
+                                                                                      None)
+                write_data_2_csv(data_dict=self.tradeit_data_dict, mode='w+', file_path='./tradeit_{}_vpgame'.format(self.chanel))
+                write_data_2_csv(data_dict=self.tradeit_without_vpgame_dict, mode='a+', file_path='./tradeit_{}_vpgame'.format(self.chanel))
                 print('Time consumption get data is {}'.format(round(time.time() - starttime, 2)))
 
-                print(len(self.csgo_data_dict))
-                print(len(self.csgo_without_vpgame_dict))
-                for i in self.csgo_data_dict:
-                    item = self.csgo_data_dict[i]
+                print(len(self.tradeit_data_dict))
+                print(len(self.tradeit_without_vpgame_dict))
+                for i in self.tradeit_data_dict:
+                    item = self.tradeit_data_dict[i]
                     item.printInfo()
 
-                for i in self.csgo_without_vpgame_dict:
-                    item = self.csgo_without_vpgame_dict[i]
+                for i in self.tradeit_without_vpgame_dict:
+                    item = self.tradeit_without_vpgame_dict[i]
                     item.printInfo()
                 break
             except Exception as e:
                 print('Error Tradeitgg run: ', e)
+                raise
 
 
 if __name__ == '__main__':
@@ -308,9 +319,9 @@ if __name__ == '__main__':
     # username = args.username
     # password = args.password
 
-    vp = VPGamePrice()
+    # vp = VPGamePrice()
     # print(VPGamePrice().search('M4A4 | Hellfire (Field-Tested)'))
     # print(VPGamePrice().search('StatTrak™ AK-47 | Asiimov (BATTLE-SCARRED)'))
     # print(vp.search('AWP | Dragon Lore (FACTORY NEW)'))
     # CSGoEmpire(username, password ).get_all_data()
-    Tradeitgg().run()
+    Tradeitgg('dota2').run()
