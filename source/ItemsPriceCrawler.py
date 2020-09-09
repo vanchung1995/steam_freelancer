@@ -288,12 +288,16 @@ class Tradeitgg:
                         vpgameprices = self.vpgamecrawler.search(item_name, self.vpgamedata_dict)
                         if len(vpgameprices) > 0:
                             vpprice = float(vpgameprices[0].strip().replace(',', ''))
-                            self.tradeit_data_dict[item_name] = ItemCompare(item_name, 'tradeit', price, 'vpgame', vpprice)
+                            self.tradeit_data_dict[item_name] = ItemCompare(item_name, 'tradeit', price, 'vpgame',
+                                                                            vpprice)
                         else:
-                            self.tradeit_without_vpgame_dict[item_name] = ItemCompare(item_name, 'tradeit', price, 'vpgame',
+                            self.tradeit_without_vpgame_dict[item_name] = ItemCompare(item_name, 'tradeit', price,
+                                                                                      'vpgame',
                                                                                       None)
-                write_data_2_csv(data_dict=self.tradeit_data_dict, mode='w+', file_path='./tradeit_{}_vpgame'.format(self.chanel))
-                write_data_2_csv(data_dict=self.tradeit_without_vpgame_dict, mode='a+', file_path='./tradeit_{}_vpgame'.format(self.chanel))
+                write_data_2_csv(data_dict=self.tradeit_data_dict, mode='w+',
+                                 file_path='./tradeit_{}_vpgame'.format(self.chanel))
+                write_data_2_csv(data_dict=self.tradeit_without_vpgame_dict, mode='a+',
+                                 file_path='./tradeit_{}_vpgame'.format(self.chanel))
                 print('Time consumption get data is {}'.format(round(time.time() - starttime, 2)))
 
                 print(len(self.tradeit_data_dict))
@@ -311,6 +315,68 @@ class Tradeitgg:
                 raise
 
 
+class LootFarm:
+    def __init__(self, chanel):
+        self.app_id = None
+        if chanel == 'csgo':
+            self.app_id = 730
+        elif chanel == 'dota2':
+            self.app_id = 570
+        else:
+            raise Exception('chanel must be csgo or dota2')
+        self.url = 'https://loot.farm/botsInventory_{}.json'.format(self.app_id)
+
+    def get_all_data(self):
+        response = rq.get(self.url)
+        if response.status_code != 200:
+            raise Exception('Status code of get request is {}'.format(response.status_code))
+
+        data = response.json()['result']
+        return data
+
+
+class Fiveetop:
+    def __init__(self, chanel):
+        self.app_id = None
+        if chanel == 'csgo':
+            self.app_id = 730
+        elif chanel == 'dota2':
+            self.app_id = 570
+        else:
+            raise Exception('chanel must be csgo or dota2 in itit')
+        self.params = {
+            'appid': self.app_id,
+            'rows': 100,
+            # 'api': 'null',
+            # 'callback': 'jQuery112402552686275930278_1599619717551',
+            # 'rel': 'goldingot_2_realitemsback',
+            # 'rarity': '',
+            # 'quality': '',
+            # 'exterior': '',
+            # 'type': '',
+            # 'itemWidth': 160,
+            # 'data': 'loading',
+            # '_': 1599619717552,
+        }
+        self.url = 'https://www.5etop.com/api/ingotitems/realitemback/list.do'
+
+    def get_all_data(self):
+        cookies = {
+            # 'DJSP_UUID': '1746bde59393fed2b798f0df',
+            # '__cfduid': 'dc2adaadcb0544fdb42312fd9e23096ba1599537568',
+            'DJSP_USER': 'fELYbixIZp9a%2BLtkVSUyoNX7irorPqIx3DNAFjkeQqCDy5MoDtqwl0j9Skb7Ii%2FniyAmSTa40%2BWGOk2T2q3%2FsgJOXFXdQn3KzU14s356cEU%3D',
+            # 'Hm_lvt_dota21cb9c842508c929123cd97ecd5278a28': '1599537570,1599538939',
+            # 'JSESSIONID': 'B0B0B4BBB19E56033EAEC373322A2FB5',
+            # 'Hm_lpvt_1cb9c842508c929123cd97ecd5278a28': '1599619455'
+        }
+        response = rq.get(self.url, params=self.params, cookies=cookies)
+        if response.status_code != 200:
+            raise Exception('Status code of get request is {}'.format(response.status_code))
+
+        data = response.json()['datas']['list']
+        return data
+
+
 if __name__ == '__main__':
     # parser = argparse.ArgumentParser(description='Enter username and password')
     # parser.add_argument('--username', type=str, required=True, help='username CSGoEmpire')
@@ -324,4 +390,11 @@ if __name__ == '__main__':
     # print(VPGamePrice().search('StatTrak™ AK-47 | Asiimov (BATTLE-SCARRED)'))
     # print(vp.search('AWP | Dragon Lore (FACTORY NEW)'))
     # CSGoEmpire(username, password ).get_all_data()
-    Tradeitgg('dota2').run()
+
+    # Tradeitgg('csgo').run()
+
+    # data = LootFarm('csgo').get_all_data()
+    # print(data)
+
+    data = Fiveetop('dota2').get_all_data()
+    print(len(data))
