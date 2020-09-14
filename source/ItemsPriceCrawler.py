@@ -6,17 +6,8 @@ import argparse
 import time
 from datetime import datetime
 
-item_withdraw_class = 'item--instant-withdraw'
-item_withdraw_class = 'item__inner'
-item_withdraw_name_class = 'item__name'
-item_withdraw_price_class = 'item__price'
-item_withdraw_brand_class = 'text-xxxs'
-
-items = []
-max_delta_time = 3 * 60
-
-
-def add_item(name, csgoprice, vpprice):
+def add_item(name, csgoprice, vpprice, items):
+    max_delta_time = 3 * 60
     isexist = False
     for item in items:
         if time.time() - item['timestamp'] <= max_delta_time and item['name'] == name and item[
@@ -34,7 +25,7 @@ def add_item(name, csgoprice, vpprice):
         items.append(item)
 
 
-def print_all_items(items=items):
+def print_all_items(items):
     for item in items:
         name = item['name']
         stp = item['timestamp']
@@ -75,6 +66,11 @@ class CSGoEmpire:
         login_btn.send_keys(Keys.ENTER)
 
     def get_all_data(self):
+        items = []
+        item_withdraw_class = 'item__inner'
+        item_withdraw_name_class = 'item__name'
+        item_withdraw_price_class = 'item__price'
+        item_withdraw_brand_class = 'text-xxxs'
         # signed_in
         show_custom_priced_btn_xpath = '/html/body/div[1]/div[1]/div[3]/div/div/div[1]/div/div/div[1]/div[1]/div[1]/div[2]/div[1]/div[2]'
         self.browser.get(self.url)
@@ -111,10 +107,10 @@ class CSGoEmpire:
                     sell_price = ''
                     if len(vp_prices) > 0:
                         sell_price = float(vp_prices[0].strip().replace(',', ''))
-                    add_item(name, buy_price, sell_price)
+                    add_item(name, buy_price, sell_price, items)
                 except:
                     pass
-                print_all_items()
+                print_all_items(items)
 
         self.browser.close()
 
@@ -167,7 +163,6 @@ class VPGamePrice:
             if data_dict.get(keyword) is not None:
                 items.append(data_dict[keyword])
             return items
-        print('hello')
         params = {
             'limit': self.limit,
             'offset': self.offset,
@@ -265,54 +260,51 @@ class Tradeitgg:
             "BS": "Battle-Scarred",
         }
 
-        while True:
-            try:
-                starttime = time.time()
-                self.vpgamedata_dict = self.vpgamecrawler.get_all_data()
+        try:
+            starttime = time.time()
+            self.vpgamedata_dict = self.vpgamecrawler.get_all_data()
 
-                tradeit_raw_data = rq.get(self.url)
-                if tradeit_raw_data.status_code != 200:
-                    print('Error: status code = {} get data from {}'.format(rq.status_codes, self.url_csgo_data))
-                    break
-                tradeit_raw_data = tradeit_raw_data.json()
-                for item in tradeit_raw_data:
-                    user_data = item[self.appid]['items']
-                    for fullname in user_data:
-                        item_name = fullname.split('_')[1].strip()
-                        if 'e' in user_data[fullname]:
-                            e = user_data[fullname]['e'].strip()
-                            item_name += ' (' + scriptlang[e] + ')'
-                        if item_name in self.tradeit_data_dict:
-                            continue
-                        price = float(user_data[fullname]['p']) / 100
-                        vpgameprices = self.vpgamecrawler.search(item_name, self.vpgamedata_dict)
-                        if len(vpgameprices) > 0:
-                            vpprice = float(vpgameprices[0].strip().replace(',', ''))
-                            self.tradeit_data_dict[item_name] = ItemCompare(item_name, 'tradeit', price, 'vpgame',
-                                                                            vpprice)
-                        else:
-                            self.tradeit_without_vpgame_dict[item_name] = ItemCompare(item_name, 'tradeit', price,
-                                                                                      'vpgame',
-                                                                                      None)
-                write_data_2_csv(data_dict=self.tradeit_data_dict, mode='w+',
-                                 file_path='./tradeit_{}_vpgame'.format(self.chanel))
-                write_data_2_csv(data_dict=self.tradeit_without_vpgame_dict, mode='a+',
-                                 file_path='./tradeit_{}_vpgame'.format(self.chanel))
-                print('Time consumption get data is {}'.format(round(time.time() - starttime, 2)))
+            tradeit_raw_data = rq.get(self.url)
+            if tradeit_raw_data.status_code != 200:
+                print('Error: status code = {} get data from {}'.format(rq.status_codes, self.url_csgo_data))
+            tradeit_raw_data = tradeit_raw_data.json()
+            for item in tradeit_raw_data:
+                user_data = item[self.appid]['items']
+                for fullname in user_data:
+                    item_name = fullname.split('_')[1].strip()
+                    if 'e' in user_data[fullname]:
+                        e = user_data[fullname]['e'].strip()
+                        item_name += ' (' + scriptlang[e] + ')'
+                    if item_name in self.tradeit_data_dict:
+                        continue
+                    price = float(user_data[fullname]['p']) / 100
+                    vpgameprices = self.vpgamecrawler.search(item_name, self.vpgamedata_dict)
+                    if len(vpgameprices) > 0:
+                        vpprice = float(vpgameprices[0].strip().replace(',', ''))
+                        self.tradeit_data_dict[item_name] = ItemCompare(item_name, 'tradeit', price, 'vpgame',
+                                                                        vpprice)
+                    else:
+                        self.tradeit_without_vpgame_dict[item_name] = ItemCompare(item_name, 'tradeit', price,
+                                                                                  'vpgame',
+                                                                                  None)
+            write_data_2_csv(data_dict=self.tradeit_data_dict, mode='w+',
+                             file_path='./tradeit_{}_vpgame'.format(self.chanel))
+            write_data_2_csv(data_dict=self.tradeit_without_vpgame_dict, mode='a+',
+                             file_path='./tradeit_{}_vpgame'.format(self.chanel))
+            print('Time consumption get data is {}'.format(round(time.time() - starttime, 2)))
 
-                print(len(self.tradeit_data_dict))
-                print(len(self.tradeit_without_vpgame_dict))
-                for i in self.tradeit_data_dict:
-                    item = self.tradeit_data_dict[i]
-                    item.printInfo()
+            print(len(self.tradeit_data_dict))
+            print(len(self.tradeit_without_vpgame_dict))
+            for i in self.tradeit_data_dict:
+                item = self.tradeit_data_dict[i]
+                item.printInfo()
 
-                for i in self.tradeit_without_vpgame_dict:
-                    item = self.tradeit_without_vpgame_dict[i]
-                    item.printInfo()
-                break
-            except Exception as e:
-                print('Error Tradeitgg run: ', e)
-                raise
+            for i in self.tradeit_without_vpgame_dict:
+                item = self.tradeit_without_vpgame_dict[i]
+                item.printInfo()
+        except Exception as e:
+            print('Error Tradeitgg run: ', e)
+            raise
 
 
 class LootFarm:
@@ -324,15 +316,34 @@ class LootFarm:
             self.app_id = 570
         else:
             raise Exception('chanel must be csgo or dota2')
-        self.url = 'https://loot.farm/botsInventory_{}.json'.format(self.app_id)
+        self.withdraw_url = 'https://loot.farm/botsInventory_{}.json'.format(self.app_id)
+        self.deposit_url = 'https://loot.farm/getInv_new.php?game={}'.format(self.app_id)
+        self.deposit_cookies = {
+            "PHPSESSID":"ec1a09c75541254300065055c089808a",
+        }
 
-    def get_all_data(self):
-        response = rq.get(self.url)
+    def get_withdraw_data(self):
+        response = rq.get(self.withdraw_url)
+        if response.status_code != 200:
+            raise Exception('Status code of get request is {}'.format(response.status_code))
+        try:
+            data = response.json()['result']
+            return data
+        except Exception as e:
+            print('Error: ',e)
+            return []
+
+    def get_deposit_data(self):
+        response = rq.get(self.deposit_url, cookies = self.deposit_cookies)
         if response.status_code != 200:
             raise Exception('Status code of get request is {}'.format(response.status_code))
 
-        data = response.json()['result']
-        return data
+        try:
+            data = response.json()['result']
+            return data
+        except Exception as e:
+            print('Error: ', e)
+            return []
 
 
 class Fiveetop:
@@ -344,32 +355,43 @@ class Fiveetop:
             self.app_id = 570
         else:
             raise Exception('chanel must be csgo or dota2 in itit')
-        self.params = {
+        self.withdraw_url = 'https://www.5etop.com/api/ingotitems/realitemback/list.do'
+        self.deposit_url = 'https://www.5etop.com/api/user/inventory/{}/list.do'.format(self.app_id)
+        
+        self.withdraw_params = {
             'appid': self.app_id,
-            'rows': 100,
-            # 'api': 'null',
-            # 'callback': 'jQuery112402552686275930278_1599619717551',
-            # 'rel': 'goldingot_2_realitemsback',
-            # 'rarity': '',
-            # 'quality': '',
-            # 'exterior': '',
-            # 'type': '',
-            # 'itemWidth': 160,
-            # 'data': 'loading',
-            # '_': 1599619717552,
+            'rows': 1000,
+            'api': 'null',
+            'rel': 'goldingot_2_realitemsback',
+            'itemWidth': 160,
         }
-        self.url = 'https://www.5etop.com/api/ingotitems/realitemback/list.do'
-
-    def get_all_data(self):
-        cookies = {
+        self.deposit_params = {
+            'rel':'inventory_items',
+            'itemWidth':99,
+            'data':'loading',
+            'page':1,
+            'total':1000,
+            'pages':1,
+        }
+        self.cookies = {
+            'DJSP_USER': '5FKPbO9h3suO6zuCb2fTW0cZ1rBs6cvpsc3Y6R4NcqU%2FI%2FBv1rzYE54THC1VxWxijSyy%2BIPvuvy%2FjCTIP8pPlwJOXFXdQn3KzU14s356cEU%3D',
             # 'DJSP_UUID': '1746bde59393fed2b798f0df',
             # '__cfduid': 'dc2adaadcb0544fdb42312fd9e23096ba1599537568',
-            'DJSP_USER': 'fELYbixIZp9a%2BLtkVSUyoNX7irorPqIx3DNAFjkeQqCDy5MoDtqwl0j9Skb7Ii%2FniyAmSTa40%2BWGOk2T2q3%2FsgJOXFXdQn3KzU14s356cEU%3D',
             # 'Hm_lvt_dota21cb9c842508c929123cd97ecd5278a28': '1599537570,1599538939',
             # 'JSESSIONID': 'B0B0B4BBB19E56033EAEC373322A2FB5',
             # 'Hm_lpvt_1cb9c842508c929123cd97ecd5278a28': '1599619455'
         }
-        response = rq.get(self.url, params=self.params, cookies=cookies)
+
+    def get_withdraw_data(self):
+        response = rq.get(self.withdraw_url, params=self.withdraw_params, cookies=self.cookies)
+        if response.status_code != 200:
+            raise Exception('Status code of get request is {}'.format(response.status_code))
+
+        data = response.json()['datas']['list']
+        return data
+
+    def get_deposit_data(self):
+        response = rq.get(self.deposit_url, params=self.deposit_params, cookies=self.cookies)
         if response.status_code != 200:
             raise Exception('Status code of get request is {}'.format(response.status_code))
 
@@ -377,24 +399,30 @@ class Fiveetop:
         return data
 
 
+def parse_arg():
+    parser = argparse.ArgumentParser(description='Enter username and password')
+    parser.add_argument('--username', type=str, required=True, help='username CSGoEmpire')
+    parser.add_argument('--password', required=True, help='password CSGoEmpire')
+    args = parser.parse_args()
+    username = args.username
+    password = args.password
+    return username, password
+
+
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(description='Enter username and password')
-    # parser.add_argument('--username', type=str, required=True, help='username CSGoEmpire')
-    # parser.add_argument('--password', required=True, help='password CSGoEmpire')
-    # args = parser.parse_args()
-    # username = args.username
-    # password = args.password
+    # username, password = parse_arg()
+    # CSGoEmpire(username, password ).get_all_data()
 
     # vp = VPGamePrice()
-    # print(VPGamePrice().search('M4A4 | Hellfire (Field-Tested)'))
-    # print(VPGamePrice().search('StatTrak™ AK-47 | Asiimov (BATTLE-SCARRED)'))
     # print(vp.search('AWP | Dragon Lore (FACTORY NEW)'))
-    # CSGoEmpire(username, password ).get_all_data()
 
     # Tradeitgg('csgo').run()
 
-    # data = LootFarm('csgo').get_all_data()
+    data = LootFarm('dota2').get_deposit_data()
+    print(len(data))
     # print(data)
 
-    data = Fiveetop('dota2').get_all_data()
-    print(len(data))
+    # data = Fiveetop('dota2').get_withdraw_data()
+    # data = Fiveetop('csgo').get_deposit_data()
+    # data = [(d['name'], d['value']) for d in data]
+    # print(data)
