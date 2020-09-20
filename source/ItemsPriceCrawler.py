@@ -323,15 +323,41 @@ class LootFarm:
         }
 
     def get_withdraw_data(self):
+        scriptlang = {
+            "FN": "Factory New",
+            "MW": "Minimal Wear",
+            "FT": "Field-Tested",
+            "WW": "Well-Worn",
+            "BS": "Battle-Scarred",
+        }
         response = rq.get(self.withdraw_url)
         if response.status_code != 200:
             raise Exception('Status code of get request is {}'.format(response.status_code))
         try:
             data = response.json()['result']
-            return data
+            result = {}
+            for id in data:
+                item =data[id]
+                name = item['n']
+                if 'e' in item:
+                    name += ' ('+scriptlang[item['e']]+')'
+                if "u" in item:
+                    for it in item["u"]:
+                        if len(item["u"][it]) > 0 and "st" in item["u"][it][0]:
+                            name = "StatTrak™ " + name
+                            break
+                if 'p' not in item:
+                    price = round(float(item['pst']) / 100, 3)
+                else:
+                    price = round(float(item['p']) / 100, 3)
+                if name in result:
+                    result[name].append(price)
+                else:
+                    result[name] = [price]
+            return result
         except Exception as e:
             print('Error: ',e)
-            return []
+            return {}
 
     def get_deposit_data(self):
         response = rq.get(self.deposit_url, cookies = self.deposit_cookies)
@@ -418,9 +444,9 @@ if __name__ == '__main__':
 
     # Tradeitgg('csgo').run()
 
-    data = LootFarm('dota2').get_deposit_data()
-    print(len(data))
-    # print(data)
+    data = LootFarm('csgo').get_withdraw_data()
+    for d in data:
+        print(d,',', data[d])
 
     # data = Fiveetop('dota2').get_withdraw_data()
     # data = Fiveetop('csgo').get_deposit_data()
