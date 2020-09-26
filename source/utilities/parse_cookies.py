@@ -3,9 +3,14 @@ import json
 def run():
     print("Enter the cookies: ")
     cookies_raw = input()
-    cookies = [c.strip() for c in cookies_raw.split(";")]
-    cookies = {c.split('=')[0] :c.split('=')[1] for c in cookies}
-    print(cookies)
+    cookies_list = [c.strip() for c in cookies_raw.split(";")]
+    cookies = {}
+
+    for cookie in cookies_list:
+        twodotid = cookie.index('=')
+        key = cookie[:twodotid]
+        val = cookie[twodotid+1:]
+        cookies[key] = val
     print(json.dumps(cookies, indent=4))
 
 

@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 import argparse
 import time
 from datetime import datetime
+import pandas as pd
 
 def add_item(name, csgoprice, vpprice, items):
     max_delta_time = 3 * 60
@@ -177,7 +178,7 @@ class VPGamePrice:
         data = response.json()['data']
         for item in data:
             if item['name'].lower().strip() == keyword.lower().strip():
-                items.append(item['price'])
+                items.append(float(item['price']))
         return items
 
 
@@ -208,7 +209,7 @@ class ItemCompare:
                                                                                            self.vpgame_price)))
 
 
-def write_data_2_csv(data_dict, mode='w+', file_path='./tradeit_csgo_vpgame', ext=None, sep='\t'):
+def write_data_2_csv(data_dict, mode='w+', file_path='./tradeit_csgo_vpgame', ext=None, sep=','):
     # data_dict = {
     #     'item_name' : itemcompare_obj
     # }
@@ -217,7 +218,7 @@ def write_data_2_csv(data_dict, mode='w+', file_path='./tradeit_csgo_vpgame', ex
         ext = str(datetime.fromtimestamp(time.time())).replace(' ', '_')[:19]
     with open('{}_{}.csv'.format(file_path, ext), mode) as file:
         # header = 'Name\ttradeit_csgo_price\tvpgame_price\ttradeit/vpgame\tvpgame/tradeit\texist_vpgame_price\n'
-        header = 'Name\ttradeit_price\tvpgame_price\ttradeit/vpgame\tvpgame/tradeit\texist_vpgame_price\n'
+        header = 'Name,tradeit_price,vpgame_price,tradeit/vpgame,vpgame/tradeit,exist_vpgame_price\n'
         file.write(header)
         for item_name in data_dict:
             itemcompare_obj = data_dict[item_name]
@@ -442,11 +443,28 @@ if __name__ == '__main__':
     # vp = VPGamePrice()
     # print(vp.search('AWP | Dragon Lore (FACTORY NEW)'))
 
-    # Tradeitgg('csgo').run()
+    Tradeitgg('csgo').run()
 
+    vp = VPGamePrice("csgo")
+    all_vp_data = vp.get_all_data()
     data = LootFarm('csgo').get_withdraw_data()
+
+    new_data = []
     for d in data:
-        print(d,',', data[d])
+        vp_price = vp.search(d, all_vp_data)
+        if len(vp_price) == 0:
+            vp_price = 0
+        else:
+            vp_price = vp_price[0]
+
+        loot_vp_ratio = -1
+        if vp_price != 0:
+            loot_vp_ratio = round(float(data[d][0]) / float(vp_price),3)
+        new_data.append([d, data[d][0],vp_price, loot_vp_ratio])
+    data = pd.DataFrame(new_data, columns=['Name', 'Price', "VP Price","loot.farm/vpgame"])
+    data = data.sort_values(['loot.farm/vpgame'],ascending=False,ignore_index=True)
+
+    data.to_csv(f'lootfarm_{str(datetime.now())[:19].replace(" ","-")}.csv')
 
     # data = Fiveetop('dota2').get_withdraw_data()
     # data = Fiveetop('csgo').get_deposit_data()
