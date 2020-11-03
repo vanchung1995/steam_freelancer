@@ -460,8 +460,12 @@ if __name__ == '__main__':
         loot_vp_ratio = -1
         if vp_price != 0:
             loot_vp_ratio = round(float(data[d][0]) / float(vp_price),3)
-        new_data.append([d, data[d][0],vp_price, loot_vp_ratio])
-    data = pd.DataFrame(new_data, columns=['Name', 'Price', "VP Price","loot.farm/vpgame"])
+        vp_loot_ratio = -1
+        if vp_price != 0:
+            vp_loot_ratio = round(float(vp_price) / float(data[d][0]),3)
+        new_data.append([d, data[d][0],vp_price, loot_vp_ratio, vp_loot_ratio])
+
+    data = pd.DataFrame(new_data, columns=['Name', 'Price', "VP Price","loot.farm/vpgame", "vpgame/loot.farm"])
     data = data.sort_values(['loot.farm/vpgame'],ascending=False,ignore_index=True)
 
     data.to_csv(f'lootfarm_{str(datetime.now())[:19].replace(" ","-")}.csv')
